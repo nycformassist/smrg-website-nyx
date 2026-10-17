@@ -6,10 +6,40 @@ function App() {
   const [formSubmitted, setFormSubmitted] = useState(false);
   const [selectedPackage, setSelectedPackage] = useState('');
 
-  const handleFormSubmit = (e: React.FormEvent) => {
+  const [formError, setFormError] = useState('');
+  const [formSending, setFormSending] = useState(false);
+
+  const handleFormSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setFormSubmitted(true);
-    window.scrollTo({ top: document.getElementById('contact')?.offsetTop || 0, behavior: 'smooth' });
+    setFormError('');
+    setFormSending(true);
+    
+    const form = e.currentTarget;
+    const data = {
+      name: (form.elements.namedItem('name') as HTMLInputElement)?.value || '',
+      business: (form.elements.namedItem('business') as HTMLInputElement)?.value || '',
+      email: (form.elements.namedItem('email') as HTMLInputElement)?.value || '',
+      website: (form.elements.namedItem('website') as HTMLInputElement)?.value || '',
+      businessType: (form.elements.namedItem('type') as HTMLSelectElement)?.value || '',
+      improvement: (form.elements.namedItem('improve') as HTMLSelectElement)?.value || '',
+      message: (form.elements.namedItem('message') as HTMLTextAreaElement)?.value || '',
+      selectedPackage: selectedPackage || '',
+    };
+
+    try {
+      const resp = await fetch('/api/contact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+      if (!resp.ok) throw new Error('Submission failed');
+      setFormSubmitted(true);
+      window.scrollTo({ top: document.getElementById('contact')?.offsetTop || 0, behavior: 'smooth' });
+    } catch (err) {
+      setFormError('Something went wrong. Please try again or contact us directly.');
+    } finally {
+      setFormSending(false);
+    }
   };
 
   const selectPackage = (pkg: string) => {
@@ -467,7 +497,8 @@ function App() {
                 <label htmlFor="message">Tell us a little more about what you need. (Optional)</label>
                 <textarea id="message" name="message" rows={4}></textarea>
               </div>
-              <button type="submit" className="btn btn-primary btn-full">Request My Consultation</button>
+              {formError && <p className="form-error" style={{color: '#c0392b', marginBottom: '16px'}}>{formError}</p>}
+              <button type="submit" className="btn btn-primary btn-full" disabled={formSending}>{formSending ? 'Sending...' : 'Request My Consultation'}</button>
               <p className="fine-print">Please do not submit passwords, payment information, sensitive personal information, or confidential customer records through this form.</p>
             </form>
           ) : (
